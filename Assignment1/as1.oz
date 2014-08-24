@@ -99,15 +99,26 @@ end
 % 3. Movie Feed
 %==========================
 
+
 declare
-fun {FeedCount Keywords Feeds Partial}
-   local thisSum in
-      case Keywords
-      of nil then nil
-      [] Word|OtherWords then {FeedCount OtherWords Feeds Partial+{FoldR fun {$ Word Feeds}
-   end
+fun {FeedCountOne Word Feed}
+   {FoldR fun {$ X Y} X+Y end {Map fun {$ Word2} if Word==Word2 then 1 else 0 end end Feed} 0}
 end
 
+declare
+fun {FeedCountTwo Word FeedList}
+   Word|{FoldR fun {$ X Y} X+Y end {Map fun {$ Feed} {FeedCountOne Word Feed} end FeedList} 0}|nil
+end
+
+declare
+fun {FeedCount Keyword FeedList}
+   {FoldR fun {$ X Y} X|Y end {Map fun {$ Word} {FeedCountTwo Word FeedList} end Keyword} nil}
+end
+
+
+{Browse {FeedCount [planetOfTheApes kick] [[planetOfTheApes is boring]
+                               [kick is terrible]
+                               [dabangg rocks]]}}
 
 
 %==========================
