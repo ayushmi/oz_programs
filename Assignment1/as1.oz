@@ -99,6 +99,16 @@ end
 % 3. Movie Feed
 %==========================
 
+declare
+fun {FeedCount Keywords Feeds Partial}
+   local thisSum in
+      case Keywords
+      of nil then nil
+      [] Word|OtherWords then {FeedCount OtherWords Feeds Partial+{FoldR fun {$ Word Feeds}
+   end
+end
+
+
 
 %==========================
 % 4. Tail Recursion
@@ -125,34 +135,114 @@ end
 %==========================
 
 % Sieve of Eratosthenes
+declare
+fun lazy {IntsFrom N}
+   N|{IntsFrom N+1}
+end
+
+declare
+fun lazy {FilterMultipleOf X Ys F}
+   case Ys
+   of nil then nil
+   [] Y|Yr then
+      if {F X Y} then Y|{FilterMultipleOf X Yr F}
+      else {FilterMultipleOf X Yr F}
+      end
+   end
+end
+
+declare
+fun lazy {Seive Xs}
+   case Xs
+   of nil then nil
+   [] X|Xr then X|{Seive {FilterMultipleOf X Xr fun {$ X Y} Y mod X \=0 end}}
+   end
+end
+
+{Browse {Take {Seive {IntsFrom 2}} 10}}
+
 
 %==========================
 % 6. Lazy Evaluation
 %==========================
 
-% ExpSeries
+%ExpSeries
+declare
+fun lazy {ExpSeries X}
+   local ExpSeriesHelper in
+      fun lazy {ExpSeriesHelper Xn X N}
+	 Xn|{ExpSeriesHelper (Xn*X)/{IntToFloat N} X N+1}
+      end
+      {ExpSeriesHelper 1.0 X 1}
+   end
+end
+{Browse {Take {ExpSeries 2.0} 10}}
+
+
+%Abs- helper for Approximant
+declare
+fun {Abs X1}
+   if X1>=0.0 then X1
+   else 0.0-X1
+   end
+end
+{Browse {Abs 0.0-1.0}}
+
 
 % Approximant
+declare
+fun  {Apprximant Epsilon Xs}
+   local ApprximantHelper in
+      fun  {ApprximantHelper Xs SoFar}
+	 case Xs
+	 of X1|X2|Xr then
+	    if {Or {Abs X2-X1}>=Epsilon X1==X2}   then {ApprximantHelper X2|Xr SoFar+X2}
+	    else SoFar
+	    end
+	 end
+      end
+      if {Or {Abs Xs.2.1-Xs.1}>=Epsilon Xs.2.1==Xs.1} then {ApprximantHelper Xs Xs.1}
+      else 0.0
+      end
+   end   
+end
+{Browse {Apprximant 0.374 {ExpSeries 0.5}}}
+{Browse {Apprximant 0.376 {ExpSeries 0.5}}}
+{Browse {Apprximant 0.0001 {ExpSeries 1.0}}}
 
 %==========================
 % 7. Threads
 %==========================
+declare
+fun lazy {GenerateRandomBits}
+   {OS.rand} mod 2|{GenerateRandomBits}
+end
 
 declare
-fun {AvgCount Count}
-   local RBits Average in
-      thread
-	 RBits = {OS.rand} mod 2|RBits
+fun lazy {CalculateSum RBits Count Sum}
+   if Count==0 then Sum
+   else
+      case RBits
+      of nil then Sum
+      [] Bit|RBitsRest then {CalculateSum RBitsRest Count-1 Sum+Bit}
       end
-      thread
-	 Average = {FoldR fun {$ X Y} X+Y end {Take RBits Count} 0}
-      end
-      Average div Count
    end
 end
 
-{Browse {AvgCount 10}}
+declare
+fun {AvgCount Count}
+   local RBits Sum in
+      thread
+	 RBits = {GenerateRandomBits}
+      end
+      thread
+	  Sum = {CalculateSum RBits Count 0}
+      end
+      {IntToFloat Sum}/{IntToFloat Count}
+   end
+end
 
+{Browse {AvgCount 10}-0.0}
 %==========================
 % END of Assignment
 %==========================
